@@ -1,0 +1,36 @@
+name: Daily DB Backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake up Render
+        run: curl -I https://nauticatest.app/api/health
+      - name: Wait for service
+        run: sleep 60
+      - name: Trigger backup
+        id: trigger
+        run: |
+          response=$(curl -s -w "%{http_code}" -X POST "https://nauticatest.app/api/run-backup?token=${{ secrets.BACKUP_TOKEN }}")
+          status="${response: -3}"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "${response::-3}" > backup-response.txt
+      - name: Check result
+        run: |
+          if [ "${{ steps.trigger.outputs.status }}" != "200" ]; then
+            echo "Backup failed" >&2
+            cat backup-response.txt >&2
+            exit 1
+          fi
+          echo "Backup completed successfully" >> "$GITHUB_STEP_SUMMARY"
+          cat backup-response.txt >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload response log
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-response
+          path: backup-response.txt
