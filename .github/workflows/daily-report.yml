@@ -1,0 +1,17 @@
+name: Daily report
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 16 * * *'
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake up Render
+        run: curl -I https://nauticatest.app/api/health
+      - name: Wait for service
+        run: sleep 60
+      - name: Trigger daily report
+        run: curl -X POST "https://nauticatest.app/api/run-daily-report?token=${{ secrets.DAILY_REPORT_TOKEN }}"
