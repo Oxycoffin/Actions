@@ -1,0 +1,20 @@
+name: Daily reminders
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 16 * * *'
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wake up Render
+        run: curl -I https://nauticatest.app/api/health
+
+      - name: Wait for service
+        run: sleep 60
+
+      - name: Trigger reminder job
+        run: curl -X POST "https://nauticatest.app/api/run-reminders?token=${{ secrets.REMINDER_TOKEN }}"
